@@ -46,7 +46,7 @@ for pin in m2_pins:
     GPIO.output(pin, GPIO.LOW)
 
 
-def m1_move(steps, delay=0.005, direction=True):
+def m1_move(steps, delay=0.005, direction=True, freeze=False,):
     global m1_step_counter
     for i in range(steps):
         for pin in range(0, len(m1_pins)):
@@ -56,9 +56,12 @@ def m1_move(steps, delay=0.005, direction=True):
         elif direction == False:
             m1_step_counter = (m1_step_counter + 1) % 8
         time.sleep(delay)
+    if freeze == False:
+        for pin in m1_pins:
+            GPIO.output(pin, GPIO.LOW)
 
 
-def m2_move(steps, delay=0.005, direction=True):
+def m2_move(steps, delay=0.005, direction=True, freeze=False,):
     global m2_step_counter
     for i in range(steps):
         for pin in range(0, len(m2_pins)):
@@ -68,6 +71,9 @@ def m2_move(steps, delay=0.005, direction=True):
         elif direction == False:
             m2_step_counter = (m2_step_counter + 1) % 8
         time.sleep(delay)
+    if freeze == False:
+        for pin in m1_pins:
+            GPIO.output(pin, GPIO.LOW)
 
 
 def cleanup():
