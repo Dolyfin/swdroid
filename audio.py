@@ -3,9 +3,12 @@ import wave
 import pyaudio
 import time
 
+audio_pin = 19
+
+
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(20, GPIO.OUT)
+GPIO.setup(audio_pin, GPIO.OUT)
 
 # Open the WAV file
 wav_file = wave.open('test.wav', 'rb')
@@ -18,7 +21,7 @@ stream = p.open(format=p.get_format_from_width(wav_file.getsampwidth()),
                 output=True)
 
 # Create a PWM instance on GPIO 20
-pwm = GPIO.PWM(20, wav_file.getframerate())  # PWM frequency set to sample rate
+pwm = GPIO.PWM(audio_pin, wav_file.getframerate())  # PWM frequency set to sample rate
 pwm.start(0)  # Start PWM with a duty cycle of 0
 
 # Play the audio file
