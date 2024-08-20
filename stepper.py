@@ -13,9 +13,6 @@ m2in2 = 6
 m2in3 = 13
 m2in4 = 19
 
-# careful lowering this, at some point you run into the mechanical limitation of how quick your motor can move
-step_sleep = 0.002
-
 step_count = 4096  # 5.625*(1/64) per step, 4096 steps is 360°
 
 # defining stepper motor sequence (found in documentation http://www.4tronix.co.uk/arduino/Stepper-Motors.php)
@@ -46,7 +43,7 @@ for pin in m2_pins:
     GPIO.output(pin, GPIO.LOW)
 
 
-def m1_move(steps, delay=0.005, direction=True, freeze=False,):
+def m1_move(steps=4096, delay=0.005, direction=True, freeze=False,):
     global m1_step_counter
     for i in range(steps):
         for pin in range(0, len(m1_pins)):
@@ -61,7 +58,7 @@ def m1_move(steps, delay=0.005, direction=True, freeze=False,):
             GPIO.output(pin, GPIO.LOW)
 
 
-def m2_move(steps, delay=0.005, direction=True, freeze=False,):
+def m2_move(steps=4096, delay=0.005, direction=True, freeze=False,):
     global m2_step_counter
     for i in range(steps):
         for pin in range(0, len(m2_pins)):
