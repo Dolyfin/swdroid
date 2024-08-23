@@ -11,7 +11,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(12, GPIO.OUT)
 
 # Set up PWM on the GPIO pin
-pwm = GPIO.PWM(12, 800)  # 440Hz is a placeholder frequency
+pwm = GPIO.PWM(12, 100)  # 440Hz is a placeholder frequency
 
 if not PLAY_PCM:
     p = pyaudio.PyAudio()
@@ -47,13 +47,17 @@ def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
     return wave
 
 
-def generate_beep_pwn(frequency, duration=0.1, sample_rate=44100, amplitude=1):
+def generate_beep_pwm(frequency, duration=0.1, sample_rate=44100, amplitude=1):
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
 
     # Calculate the number of samples for fade in/out
     fade_duration = int(sample_rate * 0.01)  # 10ms fade in/out
     num_samples = int(sample_rate * duration)
+
+    # Ensure the sustain duration is non-negative
+    if num_samples < 2 * fade_duration:
+        fade_duration = num_samples // 2
 
     # Generate the fade-in and fade-out amplitude adjustments
     fade_in = np.linspace(0, amplitude, fade_duration)
