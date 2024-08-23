@@ -48,7 +48,7 @@ def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
 
 
 def generate_beep_pwm(frequency, duration=0.1, sample_rate=44100, amplitude=0.3):
-    print('hi')
+    print(f'hi {frequency}')
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
     pwm.start(30)  # Start with 0% duty cycle
