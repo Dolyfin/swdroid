@@ -23,12 +23,6 @@ def generate_beep(frequency, pwm, duration=0.1, sample_rate=44100, amplitude=0.3
     pwm.stop()  # Stop the beep
 
 
-def add_silence(duration=0.05, sample_rate=44100):
-    num_samples = int(duration * sample_rate)
-    silence = np.zeros(num_samples, dtype=np.int16)
-    play_sound(silence)
-
-
 def word_to_beeps(word, factor=3, min_freq=200, max_freq=900):
     punctuation_freq = -1
     punctuation = {
@@ -69,9 +63,6 @@ def word_to_beeps(word, factor=3, min_freq=200, max_freq=900):
 def droid_speak(sentence, pwm):
     words = sentence.split()
 
-    # Start with a short silence to stabilize
-    add_silence(0.05)
-
     for word in words:
         freqs = word_to_beeps(word)
 
@@ -79,9 +70,6 @@ def droid_speak(sentence, pwm):
                 generate_beep(freq, pwm)
                 # play_sound(beep)
         time.sleep(0.05)
-
-    # Add a short silence at the end
-    add_silence(0.1)
 
 
 def main(response_text_queue, playback_activity, gui_queue):
@@ -113,15 +101,3 @@ def main(response_text_queue, playback_activity, gui_queue):
             gui_queue.put({'type': 'circle', 'value': 'PaleGreen4'})
 
         time.sleep(0.2)
-
-
-# Make sure to stop the stream gracefully
-def close_stream():
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-
-
-# Make sure to close the stream when done
-import atexit
-atexit.register(close_stream)
