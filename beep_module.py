@@ -2,6 +2,7 @@ import time
 import math
 import numpy as np
 import simpleaudio as sa
+import pyaudio
 
 
 def fnv1a_hash(word):
@@ -13,12 +14,12 @@ def fnv1a_hash(word):
     return h
 
 
-def generate_beep(frequency, duration=0.03, sample_rate=44100, amplitude=0.5):
+def generate_beep(frequency, duration=0.05, sample_rate=44100, amplitude=0.5):
     t = np.linspace(0, duration, int(sample_rate * duration), False)
     wave = amplitude * np.sin(2 * np.pi * frequency * t)
 
     # Apply fade-in and fade-out
-    fade_duration = int(sample_rate * 0.01)  # 50ms fade in/out
+    fade_duration = int(sample_rate * 0.02)  # 50ms fade in/out
     fade_in = np.linspace(0, 1, fade_duration)
     fade_out = np.linspace(1, 0, fade_duration)
     wave[:fade_duration] *= fade_in
@@ -31,8 +32,16 @@ def generate_beep(frequency, duration=0.03, sample_rate=44100, amplitude=0.5):
 
 
 def play_sound(sound_wave, sample_rate=44100):
-    play_obj = sa.play_buffer(sound_wave, 1, 2, sample_rate)
-    play_obj.wait_done()
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=1,
+                    rate=sample_rate,
+                    output=True)
+
+    stream.write(sound_wave.tobytes())
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
 
 
 def word_to_beeps(word, factor=3, min_freq=200, max_freq=900):
@@ -82,13 +91,4 @@ def droid_speak(sentence):
         for freq in freqs:
             beep = generate_beep(freq)
             play_sound(beep)
-        time.sleep(0.03)
-
-
-def main():
-    while True:
-        droid_speak(input(">"))
-
-
-if __name__ == "__main__":
-    main()
+        time.sleep(0.05)

@@ -43,7 +43,7 @@ for pin in m2_pins:
     GPIO.output(pin, GPIO.LOW)
 
 
-def m1_move(steps=4096, delay=0.005, direction=True, freeze=False,):
+def m1_move(steps: int = 4096, delay: float = 0.005, direction: bool = True, freeze: bool = False):
     global m1_step_counter
     for i in range(steps):
         for pin in range(0, len(m1_pins)):
@@ -58,7 +58,7 @@ def m1_move(steps=4096, delay=0.005, direction=True, freeze=False,):
             GPIO.output(pin, GPIO.LOW)
 
 
-def m2_move(steps=4096, delay=0.005, direction=True, freeze=False,):
+def m2_move(steps: int = 4096, delay: float = 0.005, direction: bool = True, freeze: bool = False):
     global m2_step_counter
     for i in range(steps):
         for pin in range(0, len(m2_pins)):
