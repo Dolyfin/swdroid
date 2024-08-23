@@ -4,22 +4,6 @@ import numpy as np
 import pyaudio
 import RPi.GPIO as GPIO
 
-PLAY_PCM = True
-
-# GPIO setup
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(12, GPIO.OUT)
-
-# Set up PWM on the GPIO pin
-pwm = GPIO.PWM(12, 100)  # 440Hz is a placeholder frequency
-
-if not PLAY_PCM:
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paInt16,
-                channels=1,
-                rate=44100,
-                output=True)
-
 
 def fnv1a_hash(word):
     h = 2166136261
@@ -30,18 +14,13 @@ def fnv1a_hash(word):
     return h
 
 
-def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.3):
+def generate_beep(frequency, pwm, duration=0.1, sample_rate=44100, amplitude=0.3):
     print(f'hi {frequency}')
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
     pwm.start(50)  # Start with 0% duty cycle
     time.sleep(duration)
     pwm.stop()  # Stop the beep
-
-
-def play_sound(sound_wave):
-    if not PLAY_PCM:
-        stream.write(sound_wave.tobytes())
 
 
 def add_silence(duration=0.05, sample_rate=44100):
@@ -87,7 +66,7 @@ def word_to_beeps(word, factor=3, min_freq=200, max_freq=900):
     return freqs
 
 
-def droid_speak(sentence):
+def droid_speak(sentence, pwm):
     words = sentence.split()
 
     # Start with a short silence to stabilize
@@ -97,7 +76,7 @@ def droid_speak(sentence):
         freqs = word_to_beeps(word)
 
         for freq in freqs:
-                generate_beep(freq)
+                generate_beep(freq, pwm)
                 # play_sound(beep)
         time.sleep(0.05)
 
@@ -106,6 +85,13 @@ def droid_speak(sentence):
 
 
 def main(response_text_queue, playback_activity, gui_queue):
+    # GPIO setup
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(12, GPIO.OUT)
+
+    # Set up PWM on the GPIO pin
+    pwm = GPIO.PWM(12, 100)  # 440Hz is a placeholder frequency
+
     while True:
         response_text = response_text_queue.get()
 
@@ -114,7 +100,7 @@ def main(response_text_queue, playback_activity, gui_queue):
         gui_queue.put({'type': 'circle', 'value': 'green'})
 
         playback_activity.value = True
-        droid_speak(response_text)
+        droid_speak(response_text, pwm)
         playback_activity.value = False
 
         if response_text_queue.empty():
