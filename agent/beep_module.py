@@ -30,28 +30,11 @@ def fnv1a_hash(word):
     return h
 
 
-def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
-    t = np.linspace(0, duration, int(sample_rate * duration), False)
-    wave = amplitude * np.sin(2 * np.pi * frequency * t)
-
-    # Apply fade-in and fade-out
-    fade_duration = int(sample_rate * 0.01)  # 10ms fade in/out
-    fade_in = np.linspace(0, 1, fade_duration)
-    fade_out = np.linspace(1, 0, fade_duration)
-    wave[:fade_duration] *= fade_in
-    wave[-fade_duration:] *= fade_out
-
-    # Ensure waveform is in 16-bit range
-    wave = np.int16(wave * 32767)
-
-    return wave
-
-
-def generate_beep_pwm(frequency, duration=0.1, sample_rate=44100, amplitude=0.3):
+def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.3):
     print(f'hi {frequency}')
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
-    pwm.start(30)  # Start with 0% duty cycle
+    pwm.start(50)  # Start with 0% duty cycle
     time.sleep(duration)
     pwm.stop()  # Stop the beep
 
@@ -114,11 +97,8 @@ def droid_speak(sentence):
         freqs = word_to_beeps(word)
 
         for freq in freqs:
-            if PLAY_PCM:
-                generate_beep_pwm(freq)
-            else:
-                beep = generate_beep(freq)
-                play_sound(beep)
+                generate_beep(freq)
+                # play_sound(beep)
         time.sleep(0.05)
 
     # Add a short silence at the end
