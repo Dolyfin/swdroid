@@ -11,7 +11,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(12, GPIO.OUT)
 
 # Set up PWM on the GPIO pin
-pwm = GPIO.PWM(12, 440)  # 440Hz is a placeholder frequency
+pwm = GPIO.PWM(12, 800)  # 440Hz is a placeholder frequency
 
 if not PLAY_PCM:
     p = pyaudio.PyAudio()
@@ -47,7 +47,7 @@ def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
     return wave
 
 
-def generate_beep_pwn(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
+def generate_beep_pwn(frequency, duration=0.1, sample_rate=44100, amplitude=1):
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
 
