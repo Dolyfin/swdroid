@@ -70,7 +70,7 @@ def generate_beep_pwm(frequency, duration=0.1, sample_rate=44100, amplitude=1):
     pwm.start(0)  # Start with 0% duty cycle
 
     for amp in envelope:
-        pwm.ChangeDutyCycle(amp * 100)  # Adjust duty cycle
+        pwm.ChangeDutyCycle(30)  # Adjust duty cycle
         time.sleep(1 / sample_rate)     # Wait for the next sample
 
     pwm.stop()  # Stop the beep
