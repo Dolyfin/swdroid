@@ -47,32 +47,11 @@ def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
     return wave
 
 
-def generate_beep_pwm(frequency, duration=0.1, sample_rate=44100, amplitude=1):
+def generate_beep_pwm(frequency, duration=0.1, sample_rate=44100, amplitude=0.3):
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
-
-    # Calculate the number of samples for fade in/out
-    fade_duration = int(sample_rate * 0.01)  # 10ms fade in/out
-    num_samples = int(sample_rate * duration)
-
-    # Ensure the sustain duration is non-negative
-    if num_samples < 2 * fade_duration:
-        fade_duration = num_samples // 2
-
-    # Generate the fade-in and fade-out amplitude adjustments
-    fade_in = np.linspace(0, amplitude, fade_duration)
-    fade_out = np.linspace(amplitude, 0, fade_duration)
-    sustain = np.full(num_samples - 2 * fade_duration, amplitude)
-
-    envelope = np.concatenate((fade_in, sustain, fade_out))
-
-    # Start the PWM and adjust duty cycle over time for fade-in and fade-out
-    pwm.start(0)  # Start with 0% duty cycle
-
-    for amp in envelope:
-        pwm.ChangeDutyCycle(30)  # Adjust duty cycle
-        time.sleep(1 / sample_rate)     # Wait for the next sample
-
+    pwm.start(amplitude * 100)  # Start with 0% duty cycle
+    time.sleep(duration)
     pwm.stop()  # Stop the beep
 
 
