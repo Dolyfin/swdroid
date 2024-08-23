@@ -15,10 +15,9 @@ def fnv1a_hash(word):
 
 
 def generate_beep(frequency, pwm, duration=0.1, sample_rate=44100, amplitude=0.3):
-    print(f'hi {frequency}')
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
-    pwm.start(50)  # Start with 0% duty cycle
+    pwm.start(amplitude * 100)  # Start with 0% duty cycle
     time.sleep(duration)
     pwm.stop()  # Stop the beep
 
