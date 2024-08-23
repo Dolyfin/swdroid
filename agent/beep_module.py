@@ -2,10 +2,20 @@ import time
 import math
 import numpy as np
 import pyaudio
+import RPi.GPIO as GPIO
 
+PLAY_PCM = True
 
-p = pyaudio.PyAudio()
-stream = p.open(format=pyaudio.paInt16,
+# GPIO setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(12, GPIO.OUT)
+
+# Set up PWM on the GPIO pin
+pwm = GPIO.PWM(12, 440)  # 440Hz is a placeholder frequency
+
+if not PLAY_PCM:
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paInt16,
                 channels=1,
                 rate=44100,
                 output=True)
@@ -35,6 +45,31 @@ def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
     wave = np.int16(wave * 32767)
 
     return wave
+
+
+def generate_beep_pwn(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
+    # Set the PWM frequency to the desired beep frequency
+    pwm.ChangeFrequency(frequency)
+
+    # Calculate the number of samples for fade in/out
+    fade_duration = int(sample_rate * 0.01)  # 10ms fade in/out
+    num_samples = int(sample_rate * duration)
+
+    # Generate the fade-in and fade-out amplitude adjustments
+    fade_in = np.linspace(0, amplitude, fade_duration)
+    fade_out = np.linspace(amplitude, 0, fade_duration)
+    sustain = np.full(num_samples - 2 * fade_duration, amplitude)
+
+    envelope = np.concatenate((fade_in, sustain, fade_out))
+
+    # Start the PWM and adjust duty cycle over time for fade-in and fade-out
+    pwm.start(0)  # Start with 0% duty cycle
+
+    for amp in envelope:
+        pwm.ChangeDutyCycle(amp * 100)  # Adjust duty cycle
+        time.sleep(1 / sample_rate)     # Wait for the next sample
+
+    pwm.stop()  # Stop the beep
 
 
 def play_sound(sound_wave):
@@ -94,8 +129,11 @@ def droid_speak(sentence):
         freqs = word_to_beeps(word)
 
         for freq in freqs:
-            beep = generate_beep(freq)
-            play_sound(beep)
+            if PLAY_PCM:
+                generate_beep_pwn(freq)
+            else:
+                beep = generate_beep(freq)
+                play_sound(beep)
         time.sleep(0.05)
 
     # Add a short silence at the end
