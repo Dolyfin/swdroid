@@ -6,7 +6,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(12, GPIO.OUT)
 
 # Set up PWM on the GPIO pin
-pwm = GPIO.PWM(12, 440)  # 440Hz is a placeholder frequency
+pwm = GPIO.PWM(12, 500)  # 440Hz is a placeholder frequency
 
 
 def generate_beep(frequency):
@@ -22,10 +22,6 @@ def main():
             freq = float(input("Enter frequency (Hz): "))
             print(f"Playing beep at {freq} Hz for 1 second...")
             generate_beep(freq)
-
-            cont = input("Play another beep? (y/n): ")
-            if cont.lower() != 'y':
-                break
     except KeyboardInterrupt:
         pass
     finally:
