@@ -135,7 +135,7 @@ def droid_speak(sentence):
 
         for freq in freqs:
             if PLAY_PCM:
-                generate_beep_pwn(freq)
+                generate_beep_pwm(freq)
             else:
                 beep = generate_beep(freq)
                 play_sound(beep)
