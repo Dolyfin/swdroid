@@ -164,7 +164,6 @@ def main():
 
     finally:
         voice_input_process.terminate()
-        audio_queue.put(None)
         audio_process.join()
 
 
