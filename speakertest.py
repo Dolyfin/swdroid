@@ -1,19 +1,19 @@
 import time
-import pigpio
+import RPi.GPIO as GPIO
 
-# Initialize pigpio and set up the GPIO pin
-pi = pigpio.pi()
+# GPIO setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(12, GPIO.OUT)
 
-if not pi.connected:
-    exit()
-
-GPIO_PIN = 12
+# Set up PWM on the GPIO pin
+pwm = GPIO.PWM(12, 440)  # 440Hz is a placeholder frequency
 
 
 def generate_beep(frequency):
-    pi.hardware_PWM(GPIO_PIN, frequency, 500000)  # 50% duty cycle (500,000 out of 1,000,000)
+    pwm.ChangeFrequency(frequency)
+    pwm.start(50)  # 50% duty cycle for a simple square wave
     time.sleep(1)  # Play the beep for 1 second
-    pi.hardware_PWM(GPIO_PIN, 0, 0)  # Stop the PWM signal
+    pwm.stop()
 
 
 def main():
@@ -29,8 +29,8 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        pi.set_mode(GPIO_PIN, pigpio.INPUT)  # Reset GPIO pin
-        pi.stop()
+        pwm.stop()
+        GPIO.cleanup()
         print("Exiting...")
 
 
