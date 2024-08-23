@@ -73,7 +73,8 @@ def generate_beep_pwn(frequency, duration=0.1, sample_rate=44100, amplitude=0.7)
 
 
 def play_sound(sound_wave):
-    stream.write(sound_wave.tobytes())
+    if not PLAY_PCM:
+        stream.write(sound_wave.tobytes())
 
 
 def add_silence(duration=0.05, sample_rate=44100):
