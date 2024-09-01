@@ -9,7 +9,7 @@ import os
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-stt_model_name = "tiny.en"
+stt_model_name = "base.en"
 llm_model_link = "https://huggingface.co/ThomasBaruzier/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_0_4_4.gguf"
 llm_model_name = "gemma-2-2b-it-Q4_0_4_4.gguf"
 models_dir = "models"
