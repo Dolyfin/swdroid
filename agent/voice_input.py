@@ -14,8 +14,6 @@ input_loopback = False
 dump_audio = False
 mute_while_speaking = True
 
-vad = SileroVoiceActivityDetector()
-
 # Global variables to keep track of VAD state
 speech_active = False
 silence_counter = 0
@@ -50,7 +48,7 @@ class SpeechAudioBuffer:
         self.buffer = []
 
 
-def silero_vad_process(audio_chunk, vad_threshold=0.7):
+def silero_vad_process(vad, audio_chunk, vad_threshold=0.7):
     start_time = time.perf_counter()
     if vad(audio_chunk) >= vad_threshold:
         # print(f"VAD: TRUE : {round((time.perf_counter() - start_time) * 1000,2)}")
@@ -118,7 +116,8 @@ def audio_capture(audio_queue,
         pa.terminate()
 
 
-def phrase_detection(gui_queue, vad_result,
+def phrase_detection(gui_queue,
+                     vad_result,
                      audio_chunk,
                      speech_audio_buffer,
                      latency_start,
@@ -163,6 +162,9 @@ def phrase_detection(gui_queue, vad_result,
 
 
 def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('d', 0)):
+    vad = SileroVoiceActivityDetector()
+    print("SileroVAD loaded!")
+
     audio_queue = queue.Queue()
     channels = 1
     chunk_size = 960  # 480 (30ms) 960 (60ms) 1600 (100ms)
@@ -179,6 +181,7 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
         audio_queue, gui_queue, playback_activity, pyaudio.paInt16, channels, chunk_size, samplerate))
     audio_thread.daemon = True
     audio_thread.start()
+    print("Ready!")
 
     try:
         while True:
@@ -188,7 +191,7 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
 
                 audio_chunk = adjust_volume(audio_chunk, volume_gain)
 
-                vad_result = silero_vad_process(audio_chunk)
+                vad_result = silero_vad_process(vad, audio_chunk)
                 speech_output = phrase_detection(gui_queue, vad_result, audio_chunk, speech_audio_buffer, latency_start,
                                                  gap_max_chunks)
                 if speech_output is not None:

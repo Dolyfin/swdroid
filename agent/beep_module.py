@@ -2,7 +2,14 @@ import time
 import math
 import numpy as np
 import pyaudio
-import RPi.GPIO as GPIO
+try:
+    # checks if you have access to RPi.GPIO, which is available inside RPi
+    import RPi.GPIO as GPIO
+    RPI = True
+except:
+    # In case of exception, you are executing your script outside of RPi, so import Mock.GPIO
+    import Mock.GPIO as GPIO
+    RPI = False
 
 PLAY_PCM = True
 
@@ -13,7 +20,7 @@ GPIO.setup(12, GPIO.OUT)
 # Set up PWM on the GPIO pin
 pwm = GPIO.PWM(12, 440)  # 440Hz is a placeholder frequency
 
-if not PLAY_PCM:
+if PLAY_PCM:
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paInt16,
                 channels=1,
@@ -76,6 +83,7 @@ def play_sound(sound_wave):
     stream.write(sound_wave.tobytes())
 
 
+
 def add_silence(duration=0.05, sample_rate=44100):
     num_samples = int(duration * sample_rate)
     silence = np.zeros(num_samples, dtype=np.int16)
@@ -127,13 +135,13 @@ def droid_speak(sentence):
 
     for word in words:
         freqs = word_to_beeps(word)
-
-        for freq in freqs:
-            if PLAY_PCM:
-                generate_beep_pwn(freq)
-            else:
-                beep = generate_beep(freq)
-                play_sound(beep)
+        if RPI:
+            for freq in freqs:
+                if PLAY_PCM:
+                    generate_beep_pwn(freq)
+                else:
+                    beep = generate_beep(freq)
+                    play_sound(beep)
         time.sleep(0.05)
 
     # Add a short silence at the end
@@ -141,6 +149,11 @@ def droid_speak(sentence):
 
 
 def main(response_text_queue, playback_activity, gui_queue):
+    if RPI:
+        print("RPI.GPIO detected.")
+    else:
+        print("RPI.GPIO not detected. falling back to Mock.GPIO")
+
     while True:
         response_text = response_text_queue.get()
 
@@ -162,15 +175,3 @@ def main(response_text_queue, playback_activity, gui_queue):
             gui_queue.put({'type': 'circle', 'value': 'PaleGreen4'})
 
         time.sleep(0.2)
-
-
-# Make sure to stop the stream gracefully
-def close_stream():
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-
-
-# Make sure to close the stream when done
-import atexit
-atexit.register(close_stream)

@@ -9,6 +9,7 @@ chat_history = 'Chat History\n" + "-"*50 + "\n" + "Sample chat history...'
 response_text = 'Response Text\n" + "-"*50 + "\n" + "Sample response text...'
 text_chunks = 'Text Chunks\n" + "-"*50 + "\n" + "Sample text chunks...'
 
+
 # Function to update the circle indicator color
 def update_circle(color):
     canvas.itemconfig(circle, fill=color)

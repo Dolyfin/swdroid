@@ -3,34 +3,72 @@ import wave
 import numpy
 import requests
 import time
+from faster_whisper import WhisperModel
+from llama_cpp import Llama
+import os
 
-llm_api = 'http://192.168.0.99:7701'
-tts_api = 'http://192.168.0.99:7851'
-stt_api = 'http://192.168.0.99:7700'
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+stt_model_name = "tiny.en"
+llm_model_link = "https://huggingface.co/ThomasBaruzier/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_0_4_4.gguf"
+llm_model_name = "gemma-2-2b-it-Q4_0_4_4.gguf"
+models_dir = "models"
 
 
-def llm_api_request(gui_queue, llm_prompt=''):
-    start_time = time.time()
-    response = requests.post(
-        f"{llm_api}/completion",
-        headers={"Content-Type": "application/json"},
-        json={
-            "prompt": llm_prompt,
-            "n_predict": 1024,
-            "stop": ['<|end|>', '<|user|>', '<|assistant|>', '\n\n']
-        }
+def initialize():
+    global llm, whisper
+    # Ensure the models directory exists
+    os.makedirs(models_dir, exist_ok=True)
+
+    # Full path to the model file
+    model_path = os.path.join(models_dir, llm_model_name)
+
+    # Check if the model file already exists
+    if not os.path.exists(model_path):
+        print(f"Model not found. Downloading {llm_model_name}...")
+
+        # Download the file
+        response = requests.get(llm_model_link, stream=True)
+        if response.status_code == 200:
+            with open(model_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            print(f"Downloaded {llm_model_name} successfully.")
+        else:
+            print(f"Failed to download the model. Status code: {response.status_code}")
+    else:
+        print(f"Model {llm_model_name} is already downloaded.")
+
+    llm = Llama(
+        model_path=os.path.join(models_dir, llm_model_name),
+        n_ctx=2048,
+        n_thread=1,
     )
+    print(f"LLM loaded! ({llm_model_name})")
 
-    response = response.json()
-    time_taken_ms = round((time.time() - start_time) * 1000, 1)
+    whisper = WhisperModel(model_size_or_path=stt_model_name, device="cpu", compute_type="int8", cpu_threads=3,
+                           download_root=os.path.join(os.getcwd(), models_dir))
+    print(f"STT loaded! ({stt_model_name})")
 
-    # print(response)
-    # print(response['content'])
-    # print(f"Context TPS:{round(response['timings']['prompt_per_second'],1)}")
-    # print(f"Predicted TPS:{round(response['timings']['predicted_per_second'],1)}")
-    print(f"Text API:{time_taken_ms}ms")
-    gui_queue.put({'type': 'llm_latency', 'value': time_taken_ms})
-    return response
+
+def llm_api_request(gui_queue, llm_prompt='', stop_tokens=None):
+    try:
+        start_time = time.time()
+        output = llm(
+            prompt=llm_prompt,
+            max_tokens=128,
+            stop=stop_tokens,
+            echo=False
+        )  # Generate a completion, can also call create_completion
+
+        time_taken_ms = round((time.time() - start_time) * 1000, 1)
+        print(f"Text API:{time_taken_ms}ms")
+        gui_queue.put({'type': 'llm_latency', 'value': time_taken_ms})
+
+        return output['choices'][0]['text']
+    except Exception as e:
+        print(f"Exception during LLM generation: {e}")
+        return "ERROR: API"
 
 
 def stt_api_request(gui_queue, audio_data, channels=1, samplerate=16000):
@@ -58,25 +96,19 @@ def stt_api_request(gui_queue, audio_data, channels=1, samplerate=16000):
             # Rewind the buffer to the beginning, so it can be read from
             audio_buffer.seek(0)
 
-            # Send the in-memory buffer to the Whisper API
-            response = requests.post(
-                f"{stt_api}/inference",
-                files={"file": ("temp.wav", audio_buffer, "audio/wav")},
-                data={"temperature": "0.0", "temperature_inc": "0.2", "response_format": "json"}
-            )
+            segments, info = whisper.transcribe(audio_buffer, beam_size=5)
+
+            print("Detected language '%s' with probability %f" % (info.language, info.language_probability))
+
+            for segment in segments:
+                full_text = segment.text
 
         time_taken_ms = round((time.time() - start_time) * 1000, 1)
         print(f"Whisper API:{time_taken_ms}ms")
         gui_queue.put({'type': 'stt_latency', 'value': time_taken_ms})
-        # Handle the response
-        if response.status_code == 200:
-            response_json = response.json()
-            full_text = response_json.get("text", "").strip()
-        else:
-            print(f"Error: {response.status_code} - {response.text}")
-            return f"ERROR: API {response.status_code}"
+
+        return full_text
     except Exception as e:
         print(f"Exception during transcription: {e}")
         return "ERROR: API"
-    return full_text
 
