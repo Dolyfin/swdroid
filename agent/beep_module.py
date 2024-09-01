@@ -11,22 +11,6 @@ except:
     import Mock.GPIO as GPIO
     RPI = False
 
-PLAY_PCM = True
-
-# GPIO setup
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(12, GPIO.OUT)
-
-# Set up PWM on the GPIO pin
-pwm = GPIO.PWM(12, 440)  # 440Hz is a placeholder frequency
-
-if PLAY_PCM:
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paInt16,
-                channels=1,
-                rate=44100,
-                output=True)
-
 
 def fnv1a_hash(word):
     h = 2166136261
@@ -37,57 +21,12 @@ def fnv1a_hash(word):
     return h
 
 
-def generate_beep(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
-    t = np.linspace(0, duration, int(sample_rate * duration), False)
-    wave = amplitude * np.sin(2 * np.pi * frequency * t)
-
-    # Apply fade-in and fade-out
-    fade_duration = int(sample_rate * 0.01)  # 10ms fade in/out
-    fade_in = np.linspace(0, 1, fade_duration)
-    fade_out = np.linspace(1, 0, fade_duration)
-    wave[:fade_duration] *= fade_in
-    wave[-fade_duration:] *= fade_out
-
-    # Ensure waveform is in 16-bit range
-    wave = np.int16(wave * 32767)
-
-    return wave
-
-
-def generate_beep_pwn(frequency, duration=0.1, sample_rate=44100, amplitude=0.7):
+def generate_beep(frequency, pwm, duration=0.1, sample_rate=44100, amplitude=0.05):
     # Set the PWM frequency to the desired beep frequency
     pwm.ChangeFrequency(frequency)
-
-    # Calculate the number of samples for fade in/out
-    fade_duration = int(sample_rate * 0.01)  # 10ms fade in/out
-    num_samples = int(sample_rate * duration)
-
-    # Generate the fade-in and fade-out amplitude adjustments
-    fade_in = np.linspace(0, amplitude, fade_duration)
-    fade_out = np.linspace(amplitude, 0, fade_duration)
-    sustain = np.full(num_samples - 2 * fade_duration, amplitude)
-
-    envelope = np.concatenate((fade_in, sustain, fade_out))
-
-    # Start the PWM and adjust duty cycle over time for fade-in and fade-out
-    pwm.start(0)  # Start with 0% duty cycle
-
-    for amp in envelope:
-        pwm.ChangeDutyCycle(amp * 100)  # Adjust duty cycle
-        time.sleep(1 / sample_rate)     # Wait for the next sample
-
+    pwm.start(amplitude * 100)  # Start with 0% duty cycle
+    time.sleep(duration)
     pwm.stop()  # Stop the beep
-
-
-def play_sound(sound_wave):
-    stream.write(sound_wave.tobytes())
-
-
-
-def add_silence(duration=0.05, sample_rate=44100):
-    num_samples = int(duration * sample_rate)
-    silence = np.zeros(num_samples, dtype=np.int16)
-    play_sound(silence)
 
 
 def word_to_beeps(word, factor=3, min_freq=200, max_freq=900):
@@ -127,28 +66,26 @@ def word_to_beeps(word, factor=3, min_freq=200, max_freq=900):
     return freqs
 
 
-def droid_speak(sentence):
+def droid_speak(sentence, pwm):
     words = sentence.split()
-
-    # Start with a short silence to stabilize
-    add_silence(0.05)
 
     for word in words:
         freqs = word_to_beeps(word)
-        if RPI:
-            for freq in freqs:
-                if PLAY_PCM:
-                    generate_beep_pwn(freq)
-                else:
-                    beep = generate_beep(freq)
-                    play_sound(beep)
-        time.sleep(0.05)
 
-    # Add a short silence at the end
-    add_silence(0.1)
+        for freq in freqs:
+                generate_beep(freq, pwm)
+                # play_sound(beep)
+        time.sleep(0.05)
 
 
 def main(response_text_queue, playback_activity, gui_queue):
+    # GPIO setup
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(12, GPIO.OUT)
+
+    # Set up PWM on the GPIO pin
+    pwm = GPIO.PWM(12, 100)  # 440Hz is a placeholder frequency
+
     if RPI:
         print("RPI.GPIO detected.")
     else:
@@ -162,7 +99,7 @@ def main(response_text_queue, playback_activity, gui_queue):
         gui_queue.put({'type': 'circle', 'value': 'green'})
 
         playback_activity.value = True
-        droid_speak(response_text)
+        droid_speak(response_text, pwm)
         playback_activity.value = False
 
         if response_text_queue.empty():
