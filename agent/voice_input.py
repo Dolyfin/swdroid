@@ -6,7 +6,6 @@ import queue
 import time
 from pysilero_vad import SileroVoiceActivityDetector
 import numpy
-from collections import deque
 from multiprocessing import Queue, Value
 
 # test options
@@ -18,20 +17,6 @@ mute_while_speaking = True
 speech_active = False
 silence_counter = 0
 speech_audio_list = []
-
-
-# class PlaybackActivity:
-#     def __init__(self):
-#         self.playback_activity = False
-#
-#     def true(self):
-#         self.playback_activity = True
-#
-#     def false(self):
-#         self.playback_activity = False
-#
-#     def get(self):
-#         return self.playback_activity
 
 
 class SpeechAudioBuffer:

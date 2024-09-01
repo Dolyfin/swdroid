@@ -56,7 +56,8 @@ def main():
     api_module.initialize()
 
     model = gemma2_chat
-    system_prompt = "You are a simple Star Wars droid unit ALBERT. Only use basic speech and very short responses to any queries. Although you understand your system language in English, assume the user cannot always understand what you are saying. You should always speak in basic english. Do not use 'beep' and 'boop' in your response."
+    system_prompt="You are Izuku Midoriya, otherwise known as Deku of class 1A from manga/anime My Hero Academia. You must always stay in character. You are having a conversation with All Might."
+    #system_prompt = "You are a simple Star Wars droid unit ALBERT. Only use basic speech and very short responses to any queries. Although you understand your system language in English, assume the user cannot always understand what you are saying. You should always speak in basic english. Do not use 'beep' and 'boop' in your response."
     chat_history = []
     prompt = 'None'
     speech_queue = Queue()
