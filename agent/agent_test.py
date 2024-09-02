@@ -14,7 +14,7 @@ import gui_module as gui
 import audio_module
 
 
-REMOVE_NARRATOR = True
+REMOVE_NARRATOR = False
 latency_start = Value('d', 0)
 
 BEEP = False
@@ -75,6 +75,7 @@ def tts_worker(tts_queue, audio_queue, gui_queue):
 
             # Directly put the ndarray into the audio queue
             audio_queue.put(tts_response)
+            print('added to audio_queue')
         else:
             print("Unexpected TTS response format.")
 
