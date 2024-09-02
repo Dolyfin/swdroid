@@ -5,6 +5,7 @@ import requests
 import time
 from faster_whisper import WhisperModel
 from llama_cpp import Llama
+from styletts2 import tts
 import os
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -51,24 +52,14 @@ def initialize():
     print(f"STT loaded! ({stt_model_name})")
 
 
-def llm_api_request(gui_queue, llm_prompt='', stop_tokens=None):
-    try:
-        start_time = time.time()
-        output = llm(
-            prompt=llm_prompt,
-            max_tokens=128,
-            stop=stop_tokens,
-            echo=False
-        )  # Generate a completion, can also call create_completion
+def initialize_tts():
+    import nltk
+    nltk.download('punkt_tab')
 
-        time_taken_ms = round((time.time() - start_time) * 1000, 1)
-        print(f"Text API:{time_taken_ms}ms")
-        gui_queue.put({'type': 'llm_latency', 'value': time_taken_ms})
+    global styletts
 
-        return output['choices'][0]['text']
-    except Exception as e:
-        print(f"Exception during LLM generation: {e}")
-        return "ERROR: API"
+    styletts = tts.StyleTTS2()
+    print(f"TTS loaded! (StyleTTS2)")
 
 
 def stt_api_request(gui_queue, audio_data, channels=1, samplerate=16000):
@@ -112,3 +103,42 @@ def stt_api_request(gui_queue, audio_data, channels=1, samplerate=16000):
         print(f"Exception during transcription: {e}")
         return "ERROR: API"
 
+
+def llm_api_request(gui_queue, llm_prompt='', stop_tokens=None):
+    try:
+        start_time = time.time()
+        output = llm(
+            prompt=llm_prompt,
+            max_tokens=64,
+            stop=stop_tokens,
+            echo=False
+        )
+
+        time_taken_ms = round((time.time() - start_time) * 1000, 1)
+        print(f"Text API:{time_taken_ms}ms")
+        gui_queue.put({'type': 'llm_latency', 'value': time_taken_ms})
+
+        return output['choices'][0]['text']
+    except Exception as e:
+        print(f"Exception during LLM generation: {e}")
+        return "ERROR: API"
+
+
+def tts_api_request(gui_queue, tts_prompt=''):
+    start_time = time.time()
+
+    output = styletts.inference(
+        text=tts_prompt,
+        target_voice_path=None,
+        output_wav_file=None,
+        output_sample_rate=24000,
+        alpha=0.3,
+        beta=0.7,
+        diffusion_steps=5,
+        embedding_scale=1,
+        ref_s=None)
+
+    time_taken_ms = round((time.time() - start_time) * 1000, 1)
+    print(f"Speech API:{time_taken_ms}ms")
+    gui_queue.put({'type': 'tts_latency', 'value': time_taken_ms})
+    return output

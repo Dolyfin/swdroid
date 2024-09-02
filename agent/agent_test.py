@@ -5,17 +5,19 @@ from io import BytesIO
 from multiprocessing import Process, Queue, Value
 import time
 import re
+import numpy as np
 
 import api_module
 import voice_input
 import beep_module
 import gui_module as gui
+import audio_module
 
 
 REMOVE_NARRATOR = True
-MEASURE_LATENCY = True
 latency_start = Value('d', 0)
 
+BEEP = False
 
 llama3_chat = {
     "bos": '<|begin_of_text|>',
@@ -52,16 +54,47 @@ def remove_narrator(text):
     return result
 
 
+def tts_worker(tts_queue, audio_queue, gui_queue):
+    api_module.initialize_tts()
+    while True:
+        text = tts_queue.get()
+        print(f"tts: {text}")
+        if text is None or text == '. .':
+            break
+
+        if REMOVE_NARRATOR is True:
+            text = remove_narrator(text)
+
+        tts_response = api_module.tts_api_request(gui_queue, text)
+
+        # Assuming the ndarray is the raw audio data
+        if isinstance(tts_response, np.ndarray):
+            if latency_start.value > 0:
+                print(f"End to End Latency of {round((time.time() - latency_start.value) * 1000, 2)}ms")
+                latency_start.value = -100
+
+            # Directly put the ndarray into the audio queue
+            audio_queue.put(tts_response)
+        else:
+            print("Unexpected TTS response format.")
+
+
 def main():
     api_module.initialize()
 
     model = gemma2_chat
-    system_prompt="You are Izuku Midoriya, otherwise known as Deku of class 1A from manga/anime My Hero Academia. You must always stay in character. You are having a conversation with All Might."
-    #system_prompt = "You are a simple Star Wars droid unit ALBERT. Only use basic speech and very short responses to any queries. Although you understand your system language in English, assume the user cannot always understand what you are saying. You should always speak in basic english. Do not use 'beep' and 'boop' in your response."
+    #system_prompt="You are Izuku Midoriya, otherwise known as Deku of class 1A from manga/anime My Hero Academia. You must always stay in character. You are having a conversation with All Might."
+    system_prompt = "You are a simple Star Wars droid unit ALBERT. Only use basic speech and very short responses to any queries. Although you understand your system language in English, assume the user cannot always understand what you are saying. You should always speak in basic english. Do not use 'beep' and 'boop' in your response."
     chat_history = []
     prompt = 'None'
+    # incoming voice from microphone
     speech_queue = Queue()
+    # chunks of text from llm response for TTS input
+    tts_queue = Queue()
+    # full text for generating beeps if BEEP is True
     response_text_queue = Queue()
+    # generated tts voice for playback
+    audio_queue = Queue()
     playback_activity = Value('b', False)
 
     gui_queue = Queue()
@@ -71,10 +104,20 @@ def main():
     voice_input_process.start()
     print(f"voice_input_process Started!")
 
-    # Start beep player thread
-    beep_process = Process(target=beep_module.main, args=(response_text_queue, playback_activity, gui_queue))
-    beep_process.start()
-    print(f"beep_process Started!")
+    if BEEP:
+        # Start beep player thread
+        beep_process = Process(target=beep_module.main, args=(response_text_queue, playback_activity, gui_queue))
+        beep_process.start()
+        print(f"beep_process Started!")
+    else:
+
+        # Start TTS worker thread
+        tts_process = Process(target=tts_worker, args=(tts_queue, audio_queue, gui_queue))
+        tts_process.start()
+
+        # Start audio player thread
+        audio_process = Process(target=audio_module.audio_player, args=(audio_queue, playback_activity, gui_queue))
+        audio_process.start()
 
     # Start GUI player thread
     gui_process = Process(target=gui.main, args=(gui_queue,))
@@ -175,7 +218,44 @@ def main():
             gui_queue.put({'type': 'status', 'value': "Waiting"})
             gui_queue.put({'type': 'circle', 'value': 'grey'})
 
-            response_text_queue.put(response_content)
+            # for beeps
+            if BEEP:
+                response_text_queue.put(response_content)
+                continue
+
+            # Split the response into sentences based on '.', '!', or '?'
+            split_length = 5
+            sentences = re.split(r'([.!?])', response_content)
+            current_sentence = []
+            current_length = 0
+            sentence_chunks = []
+
+            for i in range(0, len(sentences) - 1, 2):
+                sentence = sentences[i].strip()
+                punctuation = sentences[i + 1]
+                combined_sentence = sentence + punctuation
+                words_in_sentence = len(sentence.split())
+
+                if current_length + words_in_sentence >= split_length:
+                    if current_sentence:
+                        sentence_chunks.append(' '.join(current_sentence))
+                        tts_queue.put(' '.join(current_sentence))
+                    sentence_chunks.append(combined_sentence)
+                    tts_queue.put(combined_sentence)
+                    current_sentence = []
+                    current_length = 0
+                else:
+                    current_sentence.append(combined_sentence)
+                    current_length += words_in_sentence
+
+            # Add any remaining sentences in the current_sentence to the queue
+            if current_sentence:
+                sentence_chunks.append(' '.join(current_sentence))
+                tts_queue.put(' '.join(current_sentence))
+
+            sentence_chunk = ''
+            for i in sentence_chunks:
+                sentence_chunk = sentence_chunk + i + '\n'
 
     except KeyboardInterrupt:
         print("Stopping...")
