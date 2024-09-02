@@ -58,6 +58,7 @@ def tts_worker(tts_queue, audio_queue, gui_queue):
     api_module.initialize_tts()
     while True:
         text = tts_queue.get()
+        print('tts queue read')
         print(f"tts: {text}")
         if text is None or text == '. .':
             break
@@ -83,7 +84,7 @@ def tts_worker(tts_queue, audio_queue, gui_queue):
 
             # Directly put the ndarray into the audio queue
             audio_queue.put(tts_response)
-            print('added to audio_queue')
+
         else:
             print("Unexpected TTS response format.")
 
@@ -228,45 +229,45 @@ def main():
             gui_queue.put({'type': 'circle', 'value': 'grey'})
 
             # for beeps
-            if BEEP:
-                response_text_queue.put(response_content)
-                continue
+            # if BEEP:
+            #     response_text_queue.put(response_content)
+            #     continue
 
             # Split the response into sentences based on '.', '!', or '?'
-            split_length = 5
-            sentences = re.split(r'([.!?])', response_content)
-            current_sentence = []
-            current_length = 0
-            sentence_chunks = []
+            # split_length = 5
+            # sentences = re.split(r'([.!?])', response_content)
+            # current_sentence = []
+            # current_length = 0
+            # sentence_chunks = []
+            #
+            # for i in range(0, len(sentences) - 1, 2):
+            #     sentence = sentences[i].strip()
+            #     punctuation = sentences[i + 1]
+            #     combined_sentence = sentence + punctuation
+            #     words_in_sentence = len(sentence.split())
+            #
+            #     if current_length + words_in_sentence >= split_length:
+            #         if current_sentence:
+            #             sentence_chunks.append(' '.join(current_sentence))
+            #             tts_queue.put(' '.join(current_sentence))
+            #         sentence_chunks.append(combined_sentence)
+            #         tts_queue.put(combined_sentence)
+            #         current_sentence = []
+            #         current_length = 0
+            #     else:
+            #         current_sentence.append(combined_sentence)
+            #         current_length += words_in_sentence
+            #
+            # # Add any remaining sentences in the current_sentence to the queue
+            # if current_sentence:
+            #     sentence_chunks.append(' '.join(current_sentence))
+            #     tts_queue.put(' '.join(current_sentence))
+            #
+            # sentence_chunk = ''
+            # for i in sentence_chunks:
+            #     sentence_chunk = sentence_chunk + i + '\n'
 
-            for i in range(0, len(sentences) - 1, 2):
-                sentence = sentences[i].strip()
-                punctuation = sentences[i + 1]
-                combined_sentence = sentence + punctuation
-                words_in_sentence = len(sentence.split())
-
-                if current_length + words_in_sentence >= split_length:
-                    if current_sentence:
-                        sentence_chunks.append(' '.join(current_sentence))
-                        tts_queue.put(' '.join(current_sentence))
-                    sentence_chunks.append(combined_sentence)
-                    tts_queue.put(combined_sentence)
-                    current_sentence = []
-                    current_length = 0
-                else:
-                    current_sentence.append(combined_sentence)
-                    current_length += words_in_sentence
-
-            # Add any remaining sentences in the current_sentence to the queue
-            if current_sentence:
-                sentence_chunks.append(' '.join(current_sentence))
-                tts_queue.put(' '.join(current_sentence))
-
-            sentence_chunk = ''
-            for i in sentence_chunks:
-                sentence_chunk = sentence_chunk + i + '\n'
-
-            tts_queue.put('This is a test sentence that you should read out loud.')
+            tts_queue.put(response_content)
 
     except KeyboardInterrupt:
         print("Stopping...")
