@@ -257,6 +257,8 @@ def main():
             for i in sentence_chunks:
                 sentence_chunk = sentence_chunk + i + '\n'
 
+            tts_queue.put('This is a test sentence that you should read out loud.')
+
     except KeyboardInterrupt:
         print("Stopping...")
 

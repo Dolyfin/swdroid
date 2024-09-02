@@ -33,7 +33,7 @@ class SpeechAudioBuffer:
         self.buffer = []
 
 
-def silero_vad_process(vad, audio_chunk, vad_threshold=0.7):
+def silero_vad_process(vad, audio_chunk, vad_threshold=0.8):
     start_time = time.perf_counter()
     if vad(audio_chunk) >= vad_threshold:
         # print(f"VAD: TRUE : {round((time.perf_counter() - start_time) * 1000,2)}")
