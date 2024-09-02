@@ -266,6 +266,8 @@ def main():
         voice_input_process.terminate()
         beep_process.terminate()
         gui_process.terminate()
+        tts_process.terminate()
+        audio_process.terminate()
 
 
 if __name__ == "__main__":
