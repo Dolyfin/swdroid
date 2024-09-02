@@ -57,7 +57,7 @@ def initialize_tts():
     nltk.download('punkt_tab')
 
     global styletts
-
+    print(f"Loading TTS... (StyleTTS2)")
     styletts = tts.StyleTTS2()
     print(f"TTS loaded! (StyleTTS2)")
 
