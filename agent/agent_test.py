@@ -65,7 +65,15 @@ def tts_worker(tts_queue, audio_queue, gui_queue):
         if REMOVE_NARRATOR is True:
             text = remove_narrator(text)
 
+        # GUI
+        gui_queue.put({'type': 'status', 'value': "StyleTTS"})
+        gui_queue.put({'type': 'circle', 'value': 'yellow'})
+
         tts_response = api_module.tts_api_request(gui_queue, text)
+
+        # GUI
+        gui_queue.put({'type': 'status', 'value': "TTS done"})
+        gui_queue.put({'type': 'circle', 'value': 'purple'})
 
         # Assuming the ndarray is the raw audio data
         if isinstance(tts_response, np.ndarray):
