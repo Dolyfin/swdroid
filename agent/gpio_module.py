@@ -97,11 +97,11 @@ async def m2_move(steps: int = 4096, delay: float = 0.001, freeze: bool = False)
 async def motor_move_to(freq):
     global m1_last, m2_last
 
-    freq = round(freq * 0.1)
-    freq = 0
-
     m1_steps = freq - 550
     m2_steps = m1_steps * -1
+
+    m1_steps = round(m1_steps * 0.1)
+    m2_steps = round(m2_steps * 0.1)
 
     m1_steps -= m1_last
     m2_steps -= m2_last
@@ -116,9 +116,7 @@ async def motor_move_to(freq):
     m1_last = m1_steps
     m2_last = m2_steps
 
-    print("motors:")
-    print(m1_last)
-    print(m2_last)
+    print(f"m1:{m1_last}  m2:{m2_last}")
 
 
 def fnv1a_hash(word):
