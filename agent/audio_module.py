@@ -1,5 +1,4 @@
 import pyaudio
-import numpy as np
 import time
 
 def audio_player(audio_queue, playback_activity, gui_queue):
@@ -15,9 +14,9 @@ def audio_player(audio_queue, playback_activity, gui_queue):
             gui_queue.put({'type': 'circle', 'value': 'green'})
 
             # Assuming audio is a NumPy ndarray with raw PCM data
-            playback_stream = p.open(format=pyaudio.paFloat32,  # Assuming 16-bit PCM
-                                     channels=1,  # Mono audio
-                                     rate=24000,  # Sample rate, assuming 24kHz
+            playback_stream = p.open(format=pyaudio.paFloat32,
+                                     channels=1,
+                                     rate=24000,
                                      output=True)
 
             playback_activity.value = True

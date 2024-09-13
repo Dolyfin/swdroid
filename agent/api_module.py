@@ -5,61 +5,70 @@ import requests
 import time
 from faster_whisper import WhisperModel
 from llama_cpp import Llama
-from styletts2 import tts
 import os
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-stt_model_name = "base.en"
-llm_model_link = "https://huggingface.co/ThomasBaruzier/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_0_4_4.gguf"
-llm_model_name = "gemma-2-2b-it-Q4_0_4_4.gguf"
-models_dir = "models"
+STT_MODEL_NAME = "base.en"
+LLM_MODEL_LINK = "https://huggingface.co/ThomasBaruzier/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_0_4_4.gguf"
+LLM_MODEL_NAME = "gemma-2-2b-it-Q4_0_4_4.gguf"
+TTS_MODEL_LINK = "https://models.silero.ai/models/tts/en/v3_en.pt"
+TTS_MODEL_NAME = "v3_en.pt"
+MODELS_DIR = "models"
 
 
 def initialize():
     global llm, whisper
     # Ensure the models directory exists
-    os.makedirs(models_dir, exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
 
     # Full path to the model file
-    model_path = os.path.join(models_dir, llm_model_name)
+    model_path = os.path.join(MODELS_DIR, LLM_MODEL_NAME)
 
     # Check if the model file already exists
     if not os.path.exists(model_path):
-        print(f"Model not found. Downloading {llm_model_name}...")
+        print(f"Model not found. Downloading {LLM_MODEL_NAME}...")
 
         # Download the file
-        response = requests.get(llm_model_link, stream=True)
+        response = requests.get(LLM_MODEL_LINK, stream=True)
         if response.status_code == 200:
             with open(model_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
-            print(f"Downloaded {llm_model_name} successfully.")
+            print(f"Downloaded {LLM_MODEL_NAME} successfully.")
         else:
             print(f"Failed to download the model. Status code: {response.status_code}")
     else:
-        print(f"Model {llm_model_name} is already downloaded.")
+        print(f"Model {LLM_MODEL_NAME} is already downloaded.")
 
     llm = Llama(
-        model_path=os.path.join(models_dir, llm_model_name),
+        model_path=os.path.join(MODELS_DIR, LLM_MODEL_NAME),
         n_ctx=2048,
-        n_thread=1,
+        n_thread=2,
     )
-    print(f"LLM loaded! ({llm_model_name})")
+    print(f"LLM loaded! ({LLM_MODEL_NAME})")
 
-    whisper = WhisperModel(model_size_or_path=stt_model_name, device="cpu", compute_type="int8", cpu_threads=3,
-                           download_root=os.path.join(os.getcwd(), models_dir))
-    print(f"STT loaded! ({stt_model_name})")
+    whisper = WhisperModel(model_size_or_path=STT_MODEL_NAME, device="cpu", compute_type="int8", cpu_threads=3,
+                           download_root=os.path.join(os.getcwd(), MODELS_DIR))
+    print(f"STT loaded! ({STT_MODEL_NAME})")
 
 
-def initialize_tts():
-    import nltk
-    nltk.download('punkt_tab')
-
-    global styletts
-    print(f"Loading TTS... (StyleTTS2)")
-    styletts = tts.StyleTTS2()
-    print(f"TTS loaded! (StyleTTS2)")
+# def initialize_tts():
+#     print(f"Loading TTS... (SileroTTS)")
+#
+#     device = torch.device('cpu')
+#     torch.set_num_threads(4)
+#     local_file = os.path.join(MODELS_DIR, TTS_MODEL_NAME)
+#
+#     if not os.path.isfile(local_file):
+#         print(f"Downloading TTS Model: {TTS_MODEL_LINK}")
+#         torch.hub.download_url_to_file(url=TTS_MODEL_LINK,
+#                                        dst=local_file)
+#
+#     tts_model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+#     tts_model.to(device)
+#
+#     print(f"TTS loaded! (SileroTTS)")
 
 
 def stt_api_request(gui_queue, audio_data, channels=1, samplerate=16000):
@@ -124,21 +133,10 @@ def llm_api_request(gui_queue, llm_prompt='', stop_tokens=None):
         return "ERROR: API"
 
 
-def tts_api_request(gui_queue, tts_prompt=''):
-    start_time = time.time()
-
-    output = styletts.inference(
-        text=tts_prompt,
-        target_voice_path=None,
-        output_wav_file=None,
-        output_sample_rate=24000,
-        alpha=0.3,
-        beta=0.7,
-        diffusion_steps=5,
-        embedding_scale=1,
-        ref_s=None)
-
-    time_taken_ms = round((time.time() - start_time) * 1000, 1)
-    print(f"Speech API:{time_taken_ms}ms")
-    gui_queue.put({'type': 'tts_latency', 'value': time_taken_ms})
-    return output
+# def tts_api_request(gui_queue, tts_prompt='Hello world!'):
+#     start_time = time.time()
+#
+#     time_taken_ms = round((time.time() - start_time) * 1000, 1)
+#     print(f"Speech API:{time_taken_ms}ms")
+#     gui_queue.put({'type': 'tts_latency', 'value': time_taken_ms})
+#     return

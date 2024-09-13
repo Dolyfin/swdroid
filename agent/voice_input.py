@@ -152,12 +152,12 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
 
     audio_queue = queue.Queue()
     channels = 1
-    chunk_size = 960  # 480 (30ms) 960 (60ms) 1600 (100ms)
+    chunk_size = 512  # 512 (31.25ms)
     samplerate = 16000
 
-    gap_max_chunks = 16
+    gap_max_chunks = 30
 
-    volume_gain = 3
+    volume_gain = 2
 
     speech_audio_buffer = SpeechAudioBuffer()
 
@@ -172,7 +172,7 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
         while True:
             try:
                 # Wait for an audio chunk with a timeout to allow graceful shutdown
-                audio_chunk = audio_queue.get(timeout=1)
+                audio_chunk = audio_queue.get()
 
                 audio_chunk = adjust_volume(audio_chunk, volume_gain)
 

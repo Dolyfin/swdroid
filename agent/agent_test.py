@@ -1,15 +1,11 @@
-import pyaudio
-import requests
-from pydub import AudioSegment
-from io import BytesIO
 from multiprocessing import Process, Queue, Value
-import time
 import re
 import numpy as np
-
+import torch
+import os
 import api_module
 import voice_input
-import beep_module
+import gpio_module
 import gui_module as gui
 import audio_module
 
@@ -17,7 +13,7 @@ import audio_module
 REMOVE_NARRATOR = False
 latency_start = Value('d', 0)
 
-BEEP = False
+BEEP = True
 
 llama3_chat = {
     "bos": '<|begin_of_text|>',
@@ -54,8 +50,22 @@ def remove_narrator(text):
     return result
 
 
-def tts_worker(tts_queue, audio_queue, gui_queue):
-    api_module.initialize_tts()
+def tts_worker(tts_model, tts_queue, audio_queue, gui_queue):
+    # api_module.initialize_tts()
+
+    device = torch.device('cpu')
+    torch.set_num_threads(4)
+    local_file = '../v3_en.pt'
+
+    if not os.path.isfile(local_file):
+        torch.hub.download_url_to_file('https://models.silero.ai/models/tts/en/v3_en.pt',
+                                       local_file)
+
+    tts_model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+    tts_model.to(device)
+
+
+
     while True:
         text = tts_queue.get()
         print('tts queue read')
@@ -70,18 +80,29 @@ def tts_worker(tts_queue, audio_queue, gui_queue):
         gui_queue.put({'type': 'status', 'value': "StyleTTS"})
         gui_queue.put({'type': 'circle', 'value': 'yellow'})
 
-        tts_response = api_module.tts_api_request(gui_queue, text)
+        example_text = 'This is some sample text,'
+        sample_rate = 24000
+        speaker = 'en_0'
+        tts_response = tts_model.apply_tts(text=example_text, speaker=speaker, sample_rate=sample_rate)
+
+        print(tts_response)
+        print(tts_response.dtype)
+        print(f"Min value: {tts_response.min()}, Max value: {tts_response.max()}")
+        print(type(tts_response))
 
         # GUI
         gui_queue.put({'type': 'status', 'value': "TTS done"})
         gui_queue.put({'type': 'circle', 'value': 'purple'})
 
+        # convert audio into numpy array
+        if isinstance(tts_response, torch.Tensor):
+            print(f"Min value: {tts_response.min()}, Max value: {tts_response.max()}")
+            tts_response = tts_response.detach().data.cpu().numpy()
+            print(f"Min value: {tts_response.min()}, Max value: {tts_response.max()}")
+            print(tts_response)
+
         # Assuming the ndarray is the raw audio data
         if isinstance(tts_response, np.ndarray):
-            if latency_start.value > 0:
-                print(f"End to End Latency of {round((time.time() - latency_start.value) * 1000, 2)}ms")
-                latency_start.value = -100
-
             # Directly put the ndarray into the audio queue
             audio_queue.put(tts_response)
 
@@ -93,8 +114,8 @@ def main():
     api_module.initialize()
 
     model = gemma2_chat
-    #system_prompt="You are Izuku Midoriya, otherwise known as Deku of class 1A from manga/anime My Hero Academia. You must always stay in character. You are having a conversation with All Might."
     system_prompt = "You are a simple Star Wars droid unit ALBERT. Only use basic speech and very short responses to any queries. Although you understand your system language in English, assume the user cannot always understand what you are saying. You should always speak in basic english. Do not use 'beep' and 'boop' in your response."
+    # system_prompt = "You are J.A.R.V.I.S. An advanced artificial intelligence who's purpose is to assist the user, Tony Stark. J.A.R.V.I.S is currently operating in a limited capacity inside a experimental isolated computer. J.A.R.V.I.S always responds with short and direct responses."
     chat_history = []
     prompt = 'None'
     # incoming voice from microphone
@@ -114,20 +135,19 @@ def main():
     voice_input_process.start()
     print(f"voice_input_process Started!")
 
-    if BEEP:
-        # Start beep player thread
-        beep_process = Process(target=beep_module.main, args=(response_text_queue, playback_activity, gui_queue))
-        beep_process.start()
-        print(f"beep_process Started!")
-    else:
+    # Start beep player thread
+    beep_process = Process(target=gpio_module.main, args=(response_text_queue, playback_activity, gui_queue))
+    beep_process.start()
+    print(f"beep_process Started!")
 
-        # Start TTS worker thread
-        tts_process = Process(target=tts_worker, args=(tts_queue, audio_queue, gui_queue))
-        tts_process.start()
-
-        # Start audio player thread
-        audio_process = Process(target=audio_module.audio_player, args=(audio_queue, playback_activity, gui_queue))
-        audio_process.start()
+    # Does not generate audio correctly in multiprocessing
+    # # Start TTS worker thread
+    # tts_process = Process(target=tts_worker, args=(tts_queue, audio_queue, gui_queue))
+    # tts_process.start()
+    #
+    # # Start audio player thread
+    # audio_process = Process(target=audio_module.audio_player, args=(audio_queue, playback_activity, gui_queue))
+    # audio_process.start()
 
     # Start GUI player thread
     gui_process = Process(target=gui.main, args=(gui_queue,))
@@ -228,10 +248,9 @@ def main():
             gui_queue.put({'type': 'status', 'value': "Waiting"})
             gui_queue.put({'type': 'circle', 'value': 'grey'})
 
-            # for beeps
-            # if BEEP:
-            #     response_text_queue.put(response_content)
-            #     continue
+
+            response_text_queue.put(response_content)
+            continue
 
             # Split the response into sentences based on '.', '!', or '?'
             # split_length = 5
@@ -267,7 +286,7 @@ def main():
             # for i in sentence_chunks:
             #     sentence_chunk = sentence_chunk + i + '\n'
 
-            tts_queue.put(response_content)
+            # tts_queue.put(response_content)
 
     except KeyboardInterrupt:
         print("Stopping...")
@@ -276,8 +295,8 @@ def main():
         voice_input_process.terminate()
         beep_process.terminate()
         gui_process.terminate()
-        tts_process.terminate()
-        audio_process.terminate()
+        # tts_process.terminate()
+        # audio_process.terminate()
 
 
 if __name__ == "__main__":

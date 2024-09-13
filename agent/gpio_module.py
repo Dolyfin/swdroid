@@ -1,7 +1,6 @@
 import time
 import math
-import numpy as np
-import pyaudio
+
 try:
     # checks if you have access to RPi.GPIO, which is available inside RPi
     import RPi.GPIO as GPIO
