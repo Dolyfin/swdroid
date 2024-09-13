@@ -53,12 +53,18 @@ m2_last = 0
 # Motor 1 movement
 async def m1_move(steps: int = 4096, delay: float = 0.005, freeze: bool = False):
     global m1_step_counter
+
+    direction = True
+    if steps < 0:
+        steps = steps * -1
+        direction = False
+
     for i in range(steps):
         for pin in range(0, len(m1_pins)):
             GPIO.output(m1_pins[pin], step_sequence[m1_step_counter][pin])
-        if steps > 0:
+        if direction == True:
             m1_step_counter = (m1_step_counter - 1) % 8
-        elif steps < 0:
+        elif direction == False:
             m1_step_counter = (m1_step_counter + 1) % 8
         time.sleep(delay)
     if freeze == False:
@@ -69,12 +75,18 @@ async def m1_move(steps: int = 4096, delay: float = 0.005, freeze: bool = False)
 # Motor 2 movement
 async def m2_move(steps: int = 4096, delay: float = 0.005, freeze: bool = False):
     global m2_step_counter
+
+    direction = True
+    if steps < 0:
+        steps = steps * -1
+        direction = False
+
     for i in range(steps):
         for pin in range(0, len(m2_pins)):
             GPIO.output(m2_pins[pin], step_sequence[m2_step_counter][pin])
-        if steps > 0:
+        if direction == True:
             m2_step_counter = (m2_step_counter - 1) % 8
-        elif steps < 0:
+        elif direction == False:
             m2_step_counter = (m2_step_counter + 1) % 8
         time.sleep(delay)
     if freeze == False:
@@ -169,7 +181,7 @@ async def droid_action(sentence, pwm):
         for freq in freqs:
             await asyncio.create_task(motor_move_to(freq))
             generate_beep(freq, pwm)
-        time.sleep(0.05)
+        await time.sleep(0.05)
 
 
 async def gpio_control(response_text_queue, playback_activity, gui_queue):
