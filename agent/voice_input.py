@@ -33,7 +33,7 @@ class SpeechAudioBuffer:
         self.buffer = []
 
 
-def silero_vad_process(vad, audio_chunk, vad_threshold=0.85):
+def silero_vad_process(vad, audio_chunk, vad_threshold=0.7):
     if vad(audio_chunk) >= vad_threshold:
         return True
     return False
@@ -156,7 +156,7 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
 
     gap_max_chunks = 40
 
-    volume_gain = 2
+    volume_gain = 1
 
     speech_audio_buffer = SpeechAudioBuffer()
 
