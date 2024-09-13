@@ -90,7 +90,7 @@ async def m2_move(steps: int = 4096, delay: float = 0.001, freeze: bool = False)
             m2_step_counter = (m2_step_counter + 1) % 8
         time.sleep(delay)
     if freeze == False:
-        for pin in m1_pins:
+        for pin in m2_pins:
             GPIO.output(pin, GPIO.LOW)
 
 
@@ -182,6 +182,7 @@ async def droid_action(sentence, pwm):
         freqs = word_to_beeps(word)
 
         for freq in freqs:
+            print(f"m:{freq}")
             await asyncio.create_task(motor_move_to(freq))
             generate_beep(freq, pwm)
         await asyncio.sleep(0.05)
