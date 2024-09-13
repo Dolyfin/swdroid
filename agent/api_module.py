@@ -9,7 +9,7 @@ import os
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-STT_MODEL_NAME = "base.en"
+STT_MODEL_NAME = "tiny.en"
 LLM_MODEL_LINK = "https://huggingface.co/ThomasBaruzier/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_0_4_4.gguf"
 LLM_MODEL_NAME = "gemma-2-2b-it-Q4_0_4_4.gguf"
 TTS_MODEL_LINK = "https://models.silero.ai/models/tts/en/v3_en.pt"
