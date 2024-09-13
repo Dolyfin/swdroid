@@ -48,7 +48,7 @@ def initialize():
     )
     print(f"LLM loaded! ({LLM_MODEL_NAME})")
 
-    whisper = WhisperModel(model_size_or_path=STT_MODEL_NAME, device="cpu", compute_type="int8", cpu_threads=3,
+    whisper = WhisperModel(model_size_or_path=STT_MODEL_NAME, device="cpu", compute_type="int8", cpu_threads=4,
                            download_root=os.path.join(os.getcwd(), MODELS_DIR))
     print(f"STT loaded! ({STT_MODEL_NAME})")
 

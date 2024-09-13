@@ -156,7 +156,7 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
 
     gap_max_chunks = 40
 
-    volume_gain = 1.8
+    volume_gain = 2
 
     speech_audio_buffer = SpeechAudioBuffer()
 

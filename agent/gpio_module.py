@@ -104,8 +104,8 @@ async def motor_move_to(freq):
     m2_steps = m1_steps * -1
 
     # Scale the movement
-    m1_steps = round(m1_steps * 0.2)
-    m2_steps = round(m2_steps * 0.2)
+    m1_steps = round(m1_steps * 0.25)
+    m2_steps = round(m2_steps * 0.25)
 
     # Calculate the delta from the last known position
     m1_delta = m1_steps - m1_last
