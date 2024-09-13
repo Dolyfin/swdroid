@@ -97,7 +97,7 @@ async def m2_move(steps: int = 4096, delay: float = 0.001, freeze: bool = False)
 async def motor_move_to(freq):
     global m1_last, m2_last
 
-    freq = round(freq * 0.5)
+    freq = round(freq * 0.2)
 
     m1_steps = freq - 550
     m2_steps = m1_steps * -1
