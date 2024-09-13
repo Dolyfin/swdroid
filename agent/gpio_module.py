@@ -51,7 +51,7 @@ m2_last = 0
 
 
 # Motor 1 movement
-async def m1_move(steps: int = 4096, delay: float = 0.005, freeze: bool = False):
+async def m1_move(steps: int = 4096, delay: float = 0.001, freeze: bool = False):
     global m1_step_counter
 
     direction = True
@@ -73,7 +73,7 @@ async def m1_move(steps: int = 4096, delay: float = 0.005, freeze: bool = False)
 
 
 # Motor 2 movement
-async def m2_move(steps: int = 4096, delay: float = 0.005, freeze: bool = False):
+async def m2_move(steps: int = 4096, delay: float = 0.001, freeze: bool = False):
     global m2_step_counter
 
     direction = True
@@ -96,6 +96,8 @@ async def m2_move(steps: int = 4096, delay: float = 0.005, freeze: bool = False)
 
 async def motor_move_to(freq):
     global m1_last, m2_last
+
+    freq = round(freq * 0.5)
 
     m1_steps = freq - 550
     m2_steps = m1_steps * -1
@@ -181,7 +183,7 @@ async def droid_action(sentence, pwm):
         for freq in freqs:
             await asyncio.create_task(motor_move_to(freq))
             generate_beep(freq, pwm)
-        await time.sleep(0.05)
+        await asyncio.sleep(0.05)
 
 
 async def gpio_control(response_text_queue, playback_activity, gui_queue):
