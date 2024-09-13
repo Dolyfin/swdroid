@@ -98,6 +98,7 @@ async def motor_move_to(freq):
     global m1_last, m2_last
 
     freq = round(freq * 0.1)
+    freq = 0
 
     m1_steps = freq - 550
     m2_steps = m1_steps * -1
