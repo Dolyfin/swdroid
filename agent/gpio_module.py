@@ -99,22 +99,25 @@ async def motor_move_to(freq):
 
     freeze = True
 
+    # Calculate the target steps from the midpoint (550)
     m1_steps = freq - 550
     m2_steps = m1_steps * -1
 
-    m1_steps = round(m1_steps * 0.4)
-    m2_steps = round(m2_steps * 0.4)
+    # Scale the movement
+    m1_steps = round(m1_steps * 0.2)
+    m2_steps = round(m2_steps * 0.2)
 
-    m1_steps -= m1_last
-    m2_steps -= m2_last
+    # Calculate the delta from the last known position
+    m1_delta = m1_steps - m1_last
+    m2_delta = m2_steps - m2_last
 
     # Move both motors concurrently and update last step values
     await asyncio.gather(
-        m1_move(steps=m1_steps, freeze=freeze),
-        m2_move(steps=m2_steps, freeze=freeze)
+        m1_move(steps=m1_delta, freeze=freeze),
+        m2_move(steps=m2_delta, freeze=freeze)
     )
 
-    # Store the last known positions
+    # Update the last known positions to the current absolute position
     m1_last = m1_steps
     m2_last = m2_steps
 
