@@ -7,7 +7,7 @@ import api_module
 import voice_input
 import gpio_module
 import gui_module as gui
-import audio_module
+import asyncio
 
 
 REMOVE_NARRATOR = False
@@ -136,9 +136,9 @@ def main():
     print(f"voice_input_process Started!")
 
     # Start beep player thread
-    beep_process = Process(target=gpio_module.main, args=(response_text_queue, playback_activity, gui_queue))
-    beep_process.start()
-    print(f"beep_process Started!")
+    gpio_process = Process(target=gpio_module.main, args=(response_text_queue, playback_activity, gui_queue))
+    gpio_process.start()
+    print(f"gpio_process Started!")
 
     # Does not generate audio correctly in multiprocessing
     # # Start TTS worker thread
@@ -293,7 +293,7 @@ def main():
 
     finally:
         voice_input_process.terminate()
-        beep_process.terminate()
+        gpio_process.terminate()
         gui_process.terminate()
         # tts_process.terminate()
         # audio_process.terminate()

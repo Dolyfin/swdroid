@@ -10,7 +10,7 @@ from multiprocessing import Queue, Value
 
 # test options
 input_loopback = False
-dump_audio = False
+dump_audio = True
 mute_while_speaking = True
 
 # Global variables to keep track of VAD state
@@ -33,12 +33,9 @@ class SpeechAudioBuffer:
         self.buffer = []
 
 
-def silero_vad_process(vad, audio_chunk, vad_threshold=0.8):
-    start_time = time.perf_counter()
+def silero_vad_process(vad, audio_chunk, vad_threshold=0.85):
     if vad(audio_chunk) >= vad_threshold:
-        # print(f"VAD: TRUE : {round((time.perf_counter() - start_time) * 1000,2)}")
         return True
-    # print(f"VAD: FALSE: {round((time.perf_counter() - start_time) * 1000,2)}")
     return False
 
 
@@ -101,12 +98,13 @@ def audio_capture(audio_queue,
         pa.terminate()
 
 
-def phrase_detection(gui_queue,
+def phrase_detection(playback_activity,
+                     gui_queue,
                      vad_result,
                      audio_chunk,
                      speech_audio_buffer,
                      latency_start,
-                     gap_max_chunks=10):
+                     gap_max_chunks=10,):
     global speech_active, silence_counter, speech_audio_list
 
     if vad_result is False and speech_active is False:
@@ -142,6 +140,7 @@ def phrase_detection(gui_queue,
                     save_audio_to_wav(speech_output_array, filename)
                     print(f'Saved speech to {filename}')
 
+                playback_activity.value = True
                 return speech_output_array
     return None
 
@@ -155,9 +154,9 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
     chunk_size = 512  # 512 (31.25ms)
     samplerate = 16000
 
-    gap_max_chunks = 30
+    gap_max_chunks = 40
 
-    volume_gain = 2
+    volume_gain = 1.2
 
     speech_audio_buffer = SpeechAudioBuffer()
 
@@ -177,7 +176,7 @@ def main(speech_queue, gui_queue, playback_activity=False, latency_start=Value('
                 audio_chunk = adjust_volume(audio_chunk, volume_gain)
 
                 vad_result = silero_vad_process(vad, audio_chunk)
-                speech_output = phrase_detection(gui_queue, vad_result, audio_chunk, speech_audio_buffer, latency_start,
+                speech_output = phrase_detection(playback_activity, gui_queue, vad_result, audio_chunk, speech_audio_buffer, latency_start,
                                                  gap_max_chunks)
                 if speech_output is not None:
                     speech_queue.put(speech_output)
