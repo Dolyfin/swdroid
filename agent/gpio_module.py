@@ -40,9 +40,6 @@ step_sequence = [[1, 0, 0, 1],
                  [0, 0, 1, 1],
                  [0, 0, 0, 1]]
 
-# setting up
-GPIO.setmode(GPIO.BCM)
-
 m1_pins = [m1int1, m1in2, m1in3, m1in4]
 m1_step_counter = 0
 
@@ -181,6 +178,7 @@ async def gpio_control(response_text_queue, playback_activity, gui_queue):
     else:
         print("RPI.GPIO not detected. falling back to Mock.GPIO")
 
+    # setting up
     GPIO.setmode(GPIO.BCM)
 
     # Speaker GPIO setup
