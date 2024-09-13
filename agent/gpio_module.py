@@ -97,6 +97,8 @@ async def m2_move(steps: int = 4096, delay: float = 0.001, freeze: bool = False)
 async def motor_move_to(freq):
     global m1_last, m2_last
 
+    freeze = True
+
     m1_steps = freq - 550
     m2_steps = m1_steps * -1
 
@@ -108,8 +110,8 @@ async def motor_move_to(freq):
 
     # Move both motors concurrently and update last step values
     await asyncio.gather(
-        m1_move(steps=m1_steps),
-        m2_move(steps=m2_steps)
+        m1_move(steps=m1_steps, freeze=freeze),
+        m2_move(steps=m2_steps, freeze=freeze)
     )
 
     # Store the last known positions
